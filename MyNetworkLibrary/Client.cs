@@ -13,34 +13,44 @@ namespace MyNetworkLibrary
         public Guid RoomID { get; set; } = Guid.Empty;
         public bool IsAuth { get; set; } = false;
 
-        public bool IsCnnect { get; private set; } = false;
-        public bool IsAvailable { get { return tcpClient.Available >= 4; } }
+        public bool IsConnect { get; private set; } = false;
+        public bool IsAvailable { get { return tcpClient?.Available >= 4; } }
 
         public Client(string hostIP, int port)
         {
             tcpClient = new TcpClient(hostIP, port);
+            IsConnect = true;
         }
 
         public Client(TcpClient tcpClient)
         {
             this.tcpClient = tcpClient;
+            IsConnect = true;
         }
 
         public string Read()
         {
             string result = string.Empty;
-            byte[] dataBytes = new byte[sizeof(int)];
+
             if (IsAvailable)
             {
-                NetworkStream stream = tcpClient.GetStream();
+                try
+                {
+                    byte[] dataBytes = new byte[4];
+                    NetworkStream stream = tcpClient.GetStream();
 
-                stream.Read(dataBytes, 0, dataBytes.Length);
-                int dataSize = BitConverter.ToInt32(dataBytes);
+                    stream.Read(dataBytes, 0, dataBytes.Length);
+                    int dataSize = BitConverter.ToInt32(dataBytes);
 
-
-                stream.Read(dataBytes, 0, dataSize);
-                result = JsonSerializer.Deserialize<string>(dataBytes);
-                
+                    dataBytes = new byte[dataSize];
+                    stream.Read(dataBytes, 0, dataSize);
+                    result = JsonSerializer.Deserialize<string>(dataBytes);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Ошибка! " + e.Message);
+                    IsConnect = false;
+                }
             }
 
             return result;
@@ -48,14 +58,22 @@ namespace MyNetworkLibrary
 
         public void Write(string data)
         {
-            var dataBytes = JsonSerializer.SerializeToUtf8Bytes(data);
-            var dataSize = BitConverter.GetBytes(dataBytes.Length);
+            try
+            {
+                var dataBytes = JsonSerializer.SerializeToUtf8Bytes(data);
+                var dataSize = BitConverter.GetBytes(dataBytes.Length);
 
-            List<byte> bytesRecive = new List<byte>();
-            bytesRecive.AddRange(dataSize);
-            bytesRecive.AddRange(dataBytes);
+                List<byte> bytesRecive = new List<byte>();
+                bytesRecive.AddRange(dataSize);
+                bytesRecive.AddRange(dataBytes);
 
-            tcpClient.GetStream().Write(bytesRecive.ToArray(), 0, bytesRecive.Count);
+                tcpClient.GetStream().Write(bytesRecive.ToArray(), 0, bytesRecive.Count);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Ошибка! " + e.Message);
+                IsConnect = false;
+            }
         }
     }
 }

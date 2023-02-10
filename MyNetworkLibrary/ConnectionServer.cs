@@ -1,10 +1,10 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.Sockets;
 
 namespace MyNetworkLibrary
 {
-    public class Server
+    public class ConnectionServer
     {
-
         private TcpListener TcpListener { get; set; }
         private Queue<TcpClient> clients = new Queue<TcpClient>();
 
@@ -14,22 +14,30 @@ namespace MyNetworkLibrary
 
 
 
+        public ConnectionServer(string ip, int port)
+        {
+            Console.WriteLine("Запуск сервера по адресу: " + ip + ":" + + port);
+            TcpListener = new TcpListener(IPAddress.Parse(ip), port);
+        }
         public void Start()
         {
             isRun = true;
 
             TcpListener.Start();
             Task.Run(() => {
+                TcpListener.Start();
                 while (isRun)
                 {
                     Process();
-                    Thread.Sleep(100);
+                    Thread.Sleep(1000);
                 }
+
+                TcpListener.Stop();
             });
         }
         public void Stop()
         {
-            TcpListener.Stop();
+            isRun = false;
         }
 
 
@@ -37,7 +45,7 @@ namespace MyNetworkLibrary
         public void Process()
         {
             ConnectingСlients();
-            Console.WriteLine("Await client connection...");
+            //Console.WriteLine("Await client connection...");
         }
         
         public void ConnectingСlients()
