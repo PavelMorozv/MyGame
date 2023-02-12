@@ -1,21 +1,24 @@
-﻿namespace MyNetworkLibrary.Classes
+﻿using MyNetworkLibrary.Enums;
+using System.Text;
+using System.Text.Json;
+
+namespace MyNetworkLibrary.Classes
 {
     public class ManagementServer
     {
         private ConnectionServer connectionServer;
         private List<Client> clients;
+        private List<Packet> commands;
 
         private DateTime deltaTime = DateTime.Now;
 
         public bool isRun { get { return connectionServer.isRun; } }
 
-
-
-
         public ManagementServer(ConnectionServer connectionServer)
         {
             this.connectionServer = connectionServer;
             clients = new List<Client>();
+            commands = new List<Packet>();
         }
 
         public void Start()
@@ -42,18 +45,14 @@
 
         public void Process()
         {
-            GetAwaitClients();
-
-            if ((DateTime.Now - deltaTime).TotalSeconds > 5)
-            {
-                deltaTime = DateTime.Now;
-                BroadCastTime();
-            }
-
+            AwaitClients();
+            ReceivingPackages();
+            CommandProcessing();
             RemoveLostClient();
+            Console.WriteLine("[Server][Clients is connected] - " + clients.Count);
         }
 
-        public void GetAwaitClients()
+        private void AwaitClients()
         {
             while (connectionServer.IsNewConnected > 0)
             {
@@ -63,20 +62,64 @@
             }
         }
 
-        public void BroadCastTime()
+        private void ReceivingPackages()
         {
-            var message = DateTime.Now.ToLongTimeString();
-            Console.WriteLine("Send message: " + message);
-
-            if (clients.Count > 0)
+            Packet tempPacket;
+            foreach (var client in clients)
             {
-                clients.ForEach((c) => c.Write(message));
+                if (client.IsAvailable())
+                {
+                    try
+                    {
+                        string temp = client.Read();
+                        if (temp == string.Empty) return;
+                        tempPacket = JsonSerializer.Deserialize<Packet>(temp);
+                        tempPacket.clientId = client.Id;
+
+                        Console.WriteLine("[Server][Command][New][" +
+                            tempPacket.clientId + "]: " +
+                            tempPacket.Type.ToString());
+
+                        commands.Add(tempPacket);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Пакет неверного формата" + e);
+                    }
+                }
             }
         }
 
-        public void RemoveLostClient()
+        private void CommandProcessing()
         {
-            clients.RemoveAll((c) => c.IsConnect == false);
+            foreach (var comand in commands)
+            {
+                switch (comand.Type)
+                {
+                    case PacketType.Info:
+                        var com = new Packet()
+                        {
+                            Type = PacketType.Info,
+                            Status = PacketStatus.OK,
+                            Data = Encoding.UTF8.GetBytes(DateTime.Now.ToLongTimeString())
+                        };
+                        clients.FirstOrDefault(c => c.Id == comand.clientId)?.Write(JsonSerializer.Serialize(com));
+                        break;
+                    case PacketType.Message:
+                        break;
+                    case PacketType.Auth:
+                        break;
+                    default:
+                        break;
+                }
+            }
+            commands.Clear();
+        }
+
+        private void RemoveLostClient()
+        {
+            clients.Where(c => c.IsConnect == false).ToList().ForEach((c) => Console.WriteLine($"[Server][Client: {c.Id}] Lost connection"));
+            clients.RemoveAll(c => c.IsConnect == false);
         }
     }
 }

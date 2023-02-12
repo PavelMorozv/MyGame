@@ -13,8 +13,22 @@ namespace MyNetworkLibrary.Classes
         public Guid RoomID { get; set; } = Guid.Empty;
         public bool IsAuth { get; set; } = false;
 
-        public bool IsConnect { get; private set; } = false;
-        public bool IsAvailable { get { return tcpClient?.Available >= 4; } }
+        public bool IsConnect { get; private set; }
+        public bool IsAvailable() 
+        {
+            try
+            {
+                return tcpClient.Available >= 4;
+            }
+            catch (Exception)
+            {
+
+            }
+
+            IsConnect = false;
+            return false;
+
+        }
 
         public Client(string hostIP, int port)
         {
@@ -31,29 +45,24 @@ namespace MyNetworkLibrary.Classes
         public string Read()
         {
             string result = string.Empty;
-
-            if (IsAvailable)
+            try
             {
-                try
-                {
-                    byte[] dataBytes = new byte[4];
-                    NetworkStream stream = tcpClient.GetStream();
+                byte[] dataBytes = new byte[4];
+                NetworkStream stream = tcpClient.GetStream();
 
-                    stream.Read(dataBytes, 0, dataBytes.Length);
-                    int dataSize = BitConverter.ToInt32(dataBytes);
+                stream.Read(dataBytes, 0, dataBytes.Length);
+                int dataSize = BitConverter.ToInt32(dataBytes);
 
-                    dataBytes = new byte[dataSize];
-                    stream.Read(dataBytes, 0, dataSize);
-                    result = JsonSerializer.Deserialize<string>(dataBytes);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Ошибка! " + e.Message);
-                    IsConnect = false;
-                }
+                dataBytes = new byte[dataSize];
+                stream.Read(dataBytes, 0, dataSize);
+                return JsonSerializer.Deserialize<string>(dataBytes);
+            }
+            catch (Exception e)
+            {
+                IsConnect = false;
+                return result;
             }
 
-            return result;
         }
 
         public void Write(string data)
@@ -71,7 +80,6 @@ namespace MyNetworkLibrary.Classes
             }
             catch (Exception e)
             {
-                Console.WriteLine("Ошибка! " + e.Message);
                 IsConnect = false;
             }
         }
