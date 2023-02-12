@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Text.Json;
 
-namespace MyNetworkLibrary
+namespace MyNetworkLibrary.Classes
 {
     public class Client
     {

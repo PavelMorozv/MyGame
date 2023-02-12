@@ -1,4 +1,4 @@
-﻿namespace MyNetworkLibrary
+﻿namespace MyNetworkLibrary.Classes
 {
     public class ManagementServer
     {
@@ -22,7 +22,8 @@
         {
             if (!connectionServer.isRun) connectionServer.Start();
 
-            Task.Run(() => {
+            Task.Run(() =>
+            {
                 while (connectionServer.isRun)
                 {
                     Process();
@@ -54,7 +55,7 @@
 
         public void GetAwaitClients()
         {
-            while (connectionServer.IsNewConnected>0)
+            while (connectionServer.IsNewConnected > 0)
             {
                 var client = new Client(connectionServer.GetClients);
                 client.Id = Guid.NewGuid();

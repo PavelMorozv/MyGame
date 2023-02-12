@@ -1,14 +1,14 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-namespace MyNetworkLibrary
+namespace MyNetworkLibrary.Classes
 {
     public class ConnectionServer
     {
         private TcpListener TcpListener { get; set; }
         private Queue<TcpClient> clients = new Queue<TcpClient>();
 
-        public TcpClient GetClients { get { Console.WriteLine("Клиентов в очереди на подключение: " + IsNewConnected);  return clients.Dequeue(); } }
+        public TcpClient GetClients { get { Console.WriteLine("Клиентов в очереди на подключение: " + IsNewConnected); return clients.Dequeue(); } }
         public int IsNewConnected { get { return clients.Count; } }
         public bool isRun { get; private set; }
 
@@ -16,7 +16,7 @@ namespace MyNetworkLibrary
 
         public ConnectionServer(string ip, int port)
         {
-            Console.WriteLine("Запуск сервера по адресу: " + ip + ":" + + port);
+            Console.WriteLine("Запуск сервера по адресу: " + ip + ":" + +port);
             TcpListener = new TcpListener(IPAddress.Parse(ip), port);
         }
         public void Start()
@@ -24,7 +24,8 @@ namespace MyNetworkLibrary
             isRun = true;
 
             TcpListener.Start();
-            Task.Run(() => {
+            Task.Run(() =>
+            {
                 TcpListener.Start();
                 while (isRun)
                 {
@@ -47,7 +48,7 @@ namespace MyNetworkLibrary
             ConnectingСlients();
             //Console.WriteLine("Await client connection...");
         }
-        
+
         public void ConnectingСlients()
         {
             if (!TcpListener.Pending()) return;
